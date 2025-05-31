@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    working_dir: /code
+    volumes:
+      - .:/code
+    ports:
+      - "8080:8080"
+    command: python3 main.py
