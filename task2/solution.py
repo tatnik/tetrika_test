@@ -35,25 +35,30 @@ def parse_page(url):
 
         soup = BeautifulSoup(resp.text, 'html.parser')
 
+        # Вся информация о животных находится внутри этого div
         pages_div = safe_find(soup, 'div', id='mw-pages')
         if not pages_div:
             return None
 
-        # Все div с классом mw-category-group
+        # Животные на одну букву объединены в группы, на странице может быть одна или несколько групп 
         groups = safe_find(pages_div, 'div', class_='mw-category-group', many=True)
 
         for group in groups:
-            # Ищем букву
+            # В начале группы находится заголовок с буквой
             h3 = safe_find(group, 'h3')
-            if h3:
-                letter = h3.text.strip()
-                # Считаем элементы списка
-                items = safe_find(group, 'li')
-                if items:
-                    count = len(items)
-                    if letter not in beasts:
-                        beasts[letter] = 0
-                    beasts[letter] += count
+            if not h3:
+                continue
+            letter = h3.text.strip()
+            
+            # Каждое название животного является элементом списка
+            items = safe_find(group, 'li')
+            if not items:
+                continue
+            count = len(items)
+            
+            if letter not in beasts:
+                beasts[letter] = 0
+            beasts[letter] += count
 
         # Переход к следующей странице
         next_link = safe_find(pages_div, 'a', string='Следующая страница')
