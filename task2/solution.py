@@ -51,7 +51,7 @@ def parse_page(url):
             letter = h3.text.strip()
             
             # Каждое название животного является элементом списка
-            items = safe_find(group, 'li')
+            items = safe_find(group, 'li', many=True)
             if not items:
                 continue
             count = len(items)
