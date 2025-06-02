@@ -8,10 +8,25 @@ CATEGORY_URL = BASE_URL + '/wiki/Категория:Животные_по_алф
 OUTPUT_FILE = 'task2/beasts.csv'
 DELAY = 0.5  # Чтобы не спамить запросы
 
-
-
 ALPHABET = [chr(x) for x in range(ord('А'), ord('Я')+1)]  # А-Я
 beasts = {letter: 0 for letter in ALPHABET}
+
+def safe_find(parent, name=None, many=False, error_prefix=None, **kwargs):
+    """
+    Универсальный поиск по BeautifulSoup с авто-логированием ошибок.
+    Если many=True — работает как find_all, иначе как find.
+    """
+    finder = parent.find_all if many else parent.find
+    result = finder(name, **kwargs)
+    need_log = (not result if many else result is None)
+    if need_log:
+        attrs_desc = ', '.join(f"{k}={v!r}" for k, v in kwargs.items())
+        msg = f"Не найдено элементов" if many else f"Не найден элемент"
+        details = f"<{name or ''} {attrs_desc}>".strip()
+        prefix = f"{error_prefix} " if error_prefix else ""
+        print(f"{prefix}{msg}: {details}")
+    return result
+
 
 def parse_page(url):
     try: 
@@ -20,25 +35,28 @@ def parse_page(url):
 
         soup = BeautifulSoup(resp.text, 'html.parser')
 
-        pages_div = soup.find('div', id='mw-pages')
+        pages_div = safe_find(soup, 'div', id='mw-pages')
         if not pages_div:
             return None
 
         # Все div с классом mw-category-group
-        groups = pages_div.find_all('div', class_='mw-category-group')
+        groups = safe_find(pages_div, 'div', class_='mw-category-group', many=True)
 
         for group in groups:
             # Ищем букву
-            h3 = group.find('h3')
+            h3 = safe_find(group, 'h3')
             if h3:
                 letter = h3.text.strip()
                 # Считаем элементы списка
-                count = len(group.find_all('li'))
-                if letter not in beasts:
-                    beasts[letter] = 0
-                beasts[letter] += count
+                items = safe_find(group, 'li')
+                if items:
+                    count = len(items)
+                    if letter not in beasts:
+                        beasts[letter] = 0
+                    beasts[letter] += count
+
         # Переход к следующей странице
-        next_link = pages_div.find('a', string='Следующая страница')
+        next_link = safe_find(pages_div, 'a', string='Следующая страница')
         if next_link:
             return BASE_URL + next_link['href']
     
@@ -51,10 +69,13 @@ def parse_page(url):
 
 
 def save_to_file():
-    with open(OUTPUT_FILE, 'w', encoding='utf-8', newline='') as f:
-        writer = csv.writer(f)
-        for letter, count in beasts.items():
-            writer.writerow([letter, count])
+    try: 
+        with open(OUTPUT_FILE, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            for letter, count in beasts.items():
+                writer.writerow([letter, count])
+    except Exception as e:
+        print("Не удалось сохранить файл {OUTPUT_FILE}:", e)
     
 
 def main():
