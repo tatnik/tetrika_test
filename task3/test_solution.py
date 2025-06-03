@@ -1,5 +1,5 @@
 import pytest
-from task3.solution1 import appearance
+from task3.solution import appearance
 
 # Набор тест-кейсов из задания
 test_cases = [
