@@ -1,5 +1,5 @@
-__*
-*.pic
+__pyc*
+*.pyc
 .pytest*
 
 *.csv
